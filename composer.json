@@ -10,11 +10,9 @@
     ],
     "require": {
 		"php":	">=7.0.0",
-        "symfony/console": "~3.0"
-    },
-    "require-dev": {
-        "codeception/codeception": "dev-master",
-        "behat/gherkin": "~4.4"
+        "ext-curl": "*",
+        "symfony/console": "~3.0",
+        "guzzlehttp/guzzle": "~6.2"
     },
     "suggest": {
         "pimple/pimple": "Make use of available providers for Pimple version 3.0.x"
