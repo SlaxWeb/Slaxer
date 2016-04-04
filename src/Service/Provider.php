@@ -15,6 +15,7 @@
 namespace SlaxWeb\Slaxer\Service;
 
 use Pimple\Container;
+use SlaxWeb\Slaxer\InstallComponentCommand;
 use Symfony\Component\Console\Application as CLIApp;
 
 class Provider implements \Pimple\ServiceProviderInterface
@@ -33,6 +34,8 @@ class Provider implements \Pimple\ServiceProviderInterface
     {
         $container["slaxer.service"] = function (Container $cont) {
             $app = new CLIApp("Slaxer", "0.1.0");
+
+            $app->add(new InstallComponentCommand(new GuzzleHttp\Client));
 
             if (isset($cont["slaxerCommands"]) === false) {
                 return $app;
