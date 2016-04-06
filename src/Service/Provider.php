@@ -35,7 +35,7 @@ class Provider implements \Pimple\ServiceProviderInterface
         $container["slaxer.service"] = function (Container $cont) {
             $app = new CLIApp("Slaxer", "0.1.0");
 
-            $app->add(new InstallComponentCommand(new GuzzleHttp\Client));
+            $app->add(new InstallComponentCommand(new \GuzzleHttp\Client));
 
             if (isset($cont["slaxerCommands"]) === false) {
                 return $app;

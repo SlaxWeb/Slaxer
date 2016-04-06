@@ -115,7 +115,7 @@ class InstallComponentCommand extends Command
             "<comment>Trying to install component {$component} ...</>"
         );
         $exit = 0;
-        system("{$cmd} requrie {$component}", $exit);
+        system("{$cmd} require {$component}", $exit);
         if ($exit !== 0) {
             $output->writeln("<error>Composer did not exit as expected.</>");
             return;
@@ -141,7 +141,8 @@ class InstallComponentCommand extends Command
     {
         $response = $this->_client->request(
             "GET",
-            "{$this->_baseUrl}{$component}"
+            "{$this->_baseUrl}{$component}",
+            ["allow_redirects" => false]
         );
         return $response->getStatusCode() === 200;
     }
