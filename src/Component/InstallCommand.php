@@ -76,6 +76,10 @@ class InstallCommand extends Command
                 "name",
                 InputArgument::REQUIRED,
                 "Which component do you want to install?"
+            )->addArgument(
+                "version",
+                InputArgument::OPTIONAL,
+                "Version to install"
             );
     }
 
@@ -97,6 +101,7 @@ class InstallCommand extends Command
     protected function execute(InputInterface $input, OutputInterface $output)
     {
         $component = strtolower($input->getArgument("name"));
+        $version = $input->getArgument("version") ?? "dev-master"
         if (strpos($component, "/") === false) {
             $component = "slaxweb/{$component}";
         }
@@ -127,7 +132,7 @@ class InstallCommand extends Command
             "<comment>Trying to install component {$component} ...</>"
         );
         $exit = 0;
-        system("{$cmd} require {$component}", $exit);
+        system("{$cmd} require {$component} {$version}", $exit);
         if ($exit !== 0) {
             $output->writeln("<error>Composer did not exit as expected.</>");
             return;
