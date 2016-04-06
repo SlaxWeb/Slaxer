@@ -14,6 +14,7 @@
  */
 namespace SlaxWeb\Slaxer\Component;
 
+use SlaxWeb\Bootstrap\Application;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Input\InputArgument;
@@ -30,6 +31,13 @@ class InstallCommand extends Command
     protected $_client = null;
 
     /**
+     * SlaxWeb Framework Instance
+     *
+     * @var \SlaxWeb\Bootstrap\Application
+     */
+    protected $_app = null;
+
+    /**
      * Packagist Base Url
      *
      * @var string
@@ -42,11 +50,15 @@ class InstallCommand extends Command
      * Store the GuzzleHTTP Client object to the class property.
      *
      * @param \GuzzleHttp\Client $client Guzzle Client
+     * @param \SlaxWeb\Bootstrap\Application $app Framework instance
      * @return void
      */
-    public function __construct(\GuzzleHttp\Client $client)
+    public function __construct(\GuzzleHttp\Client $client, Application $app)
     {
         $this->_client = $client;
+        $this->_app = $app;
+
+        parent::__construct();
     }
 
     /**
@@ -119,6 +131,25 @@ class InstallCommand extends Command
         if ($exit !== 0) {
             $output->writeln("<error>Composer did not exit as expected.</>");
             return;
+        }
+        $output->writeln(
+            "<comment>OK</>"
+        );
+
+        $output->writeln(
+            "<comment>Check 'PostInstall' script exists and run it</>"
+        );
+        if (file_exists("{$this->_app["appDir"]}}../vendor/{$component}/install/PostInstall.php")) {
+            require "{$this->_app["appDir"]}}../vendor/{$component}/install/PostInstall.php";
+            if (run($this->_app) !== 0) {
+                $output->writeln(
+                    "<error>'PostInstall' ran with errors</>"
+                );
+            } else {
+                $output->writeln(
+                    "<comment>'PostInstall' found and executed successfuly</>"
+                );
+            }
         }
         $output->writeln(
             "<comment>OK</>"
