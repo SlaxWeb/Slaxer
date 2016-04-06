@@ -12,7 +12,7 @@
  * @link      https://github.com/slaxweb/
  * @version   0.1
  */
-namespace SlaxWeb\Slaxer;
+namespace SlaxWeb\Slaxer\Component;
 
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputOption;
@@ -20,7 +20,7 @@ use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 
-class InstallComponentCommand extends Command
+class InstallCommand extends Command
 {
     /**
      * Guzzle Client
