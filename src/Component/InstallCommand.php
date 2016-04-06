@@ -101,7 +101,7 @@ class InstallCommand extends Command
     protected function execute(InputInterface $input, OutputInterface $output)
     {
         $component = strtolower($input->getArgument("name"));
-        $version = $input->getArgument("version") ?? "dev-master"
+        $version = $input->getArgument("version") ?? "dev-master";
         if (strpos($component, "/") === false) {
             $component = "slaxweb/{$component}";
         }
@@ -144,8 +144,8 @@ class InstallCommand extends Command
         $output->writeln(
             "<comment>Check 'PostInstall' script exists and run it</>"
         );
-        if (file_exists("{$this->_app["appDir"]}}../vendor/{$component}/install/PostInstall.php")) {
-            require "{$this->_app["appDir"]}}../vendor/{$component}/install/PostInstall.php";
+        if (file_exists("{$this->_app["appDir"]}../vendor/{$component}/install/PostInstall.php")) {
+            require "{$this->_app["appDir"]}../vendor/{$component}/install/PostInstall.php";
             if (run($this->_app) !== 0) {
                 $output->writeln(
                     "<error>'PostInstall' ran with errors</>"
