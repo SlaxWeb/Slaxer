@@ -24,18 +24,18 @@ use Symfony\Component\Console\Output\OutputInterface;
 class InstallCommand extends Command
 {
     /**
-     * Guzzle Client
-     *
-     * @var \GuzzleHttp\Client
-     */
-    protected $_client = null;
-
-    /**
      * SlaxWeb Framework Instance
      *
      * @var \SlaxWeb\Bootstrap\Application
      */
     protected $_app = null;
+
+    /**
+     * Guzzle Client
+     *
+     * @var \GuzzleHttp\Client
+     */
+    protected $_client = null;
 
     /**
      * Packagist Base Url
@@ -49,14 +49,14 @@ class InstallCommand extends Command
      *
      * Store the GuzzleHTTP Client object to the class property.
      *
-     * @param \GuzzleHttp\Client $client Guzzle Client
      * @param \SlaxWeb\Bootstrap\Application $app Framework instance
+     * @param \GuzzleHttp\Client $client Guzzle Client
      * @return void
      */
-    public function __construct(\GuzzleHttp\Client $client, Application $app)
+    public function __construct(Application $app, \GuzzleHttp\Client $client)
     {
-        $this->_client = $client;
         $this->_app = $app;
+        $this->_client = $client;
 
         parent::__construct();
     }
