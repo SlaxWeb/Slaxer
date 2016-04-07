@@ -45,7 +45,7 @@ class InstallCommand extends Command
     protected $_baseUrl = "https://packagist.org/packages/";
 
     /**
-     * Construct Class
+     * Init Command
      *
      * Store the GuzzleHTTP Client object to the class property.
      *
@@ -53,12 +53,10 @@ class InstallCommand extends Command
      * @param \GuzzleHttp\Client $client Guzzle Client
      * @return void
      */
-    public function __construct(Application $app, \GuzzleHttp\Client $client)
+    public function init(Application $app, \GuzzleHttp\Client $client)
     {
         $this->_app = $app;
         $this->_client = $client;
-
-        parent::__construct();
     }
 
     /**
