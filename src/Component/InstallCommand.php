@@ -42,7 +42,7 @@ class InstallCommand extends Command
      *
      * @var string
      */
-    protected $_baseUrl = "https://packagist.org/packages/";
+    protected $_baseUrl = "";
 
     /**
      * Init Command
@@ -57,6 +57,8 @@ class InstallCommand extends Command
     {
         $this->_app = $app;
         $this->_client = $client;
+
+        $this->_baseUrl = $this->_app["config.service"]["slaxer.baseUrl"];
     }
 
     /**
