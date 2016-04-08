@@ -100,17 +100,17 @@ class InstallCommand extends Command
      */
     protected function execute(InputInterface $input, OutputInterface $output)
     {
-        $component = strtolower($input->getArgument("name"));
-        $version = $input->getArgument("version") ?? "dev-master";
-        if (strpos($component, "/") === false) {
-            $component = "slaxweb/{$component}";
-        }
+        $component = $this->_finalizeComponent([
+            "name"          =>  strtolower($input->getArgument("name")),
+            "version"       =>  $input->getArgument("version") ?? "",
+            "installFlags"  =>  ""
+        ]);
 
         $output->writeln(
-            "<comment>Checking if component {$component} exists ...</>"
+            "<comment>Checking if component {$component["name"]} exists ...</>"
         );
-        if ($this->_checkComponentExists($component) === false) {
-            $output->writeln("<error>Component {$component} not found.</>");
+        if ($this->_checkComponentExists($component["name"]) === false) {
+            $output->writeln("<error>Component {$component["name"]} not found.</>");
             return;
         }
         $output->writeln(
@@ -129,10 +129,13 @@ class InstallCommand extends Command
         );
 
         $output->writeln(
-            "<comment>Trying to install component {$component} ...</>"
+            "<comment>Trying to install component {$component["name"]} ...</>"
         );
         $exit = 0;
-        system("{$cmd} require {$component} {$version}", $exit);
+        system(
+            "{$cmd} require {$component["name"]} {$component["version"]} {$component["installFlags"]}",
+            $exit
+        );
         if ($exit !== 0) {
             $output->writeln("<error>Composer did not exit as expected.</>");
             return;
@@ -144,8 +147,8 @@ class InstallCommand extends Command
         $output->writeln(
             "<comment>Check 'PostInstall' script exists and run it</>"
         );
-        if (file_exists("{$this->_app["appDir"]}../vendor/{$component}/install/PostInstall.php")) {
-            require "{$this->_app["appDir"]}../vendor/{$component}/install/PostInstall.php";
+        if (file_exists("{$this->_app["appDir"]}../vendor/{$component["name"]}/install/PostInstall.php")) {
+            require "{$this->_app["appDir"]}../vendor/{$component["name"]}/install/PostInstall.php";
             if (run($this->_app) !== 0) {
                 $output->writeln(
                     "<error>'PostInstall' ran with errors</>"
@@ -161,7 +164,7 @@ class InstallCommand extends Command
         );
 
         $output->writeln(
-            "<comment>Component {$component} installed successfully.</>"
+            "<comment>Component {$component["name"]} installed successfully.</>"
         );
     }
 
@@ -196,5 +199,31 @@ class InstallCommand extends Command
     {
         ($cmd = trim(`which composer`)) || ($cmd = trim(`which composer.phar`));
         return $cmd;
+    }
+
+    /**
+     * Finalize component info
+     *
+     * Obtain component info from configuration if it exists, and was not passed
+     * in as command line arguments.
+     *
+     * @param array $component Component data
+     * @return array
+     */
+    protected function _finalizeComponent(array $component): array
+    {
+        $config = $this->_app["config.service"]["slaxer.componentSettings"][$component["name"]] ?? [];
+
+        if (strpos($component["name"], "/") === false) {
+            $component["name"] = "slaxweb/{$component}";
+        }
+
+        if ($component["version"] === "") {
+            $component["version"] = $config["version"] ?? "dev-master";
+        }
+
+        $component["installFlags"] = $config["installFlags"] ?? "";
+
+        return $config;
     }
 }
