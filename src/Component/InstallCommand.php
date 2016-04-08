@@ -213,13 +213,15 @@ class InstallCommand extends Command
     protected function _finalizeComponent(array $component): array
     {
         $config = $this->_app["config.service"]["slaxer.componentSettings"][$component["name"]] ?? [];
+        $defVer = $this->_app["config.service"]["slaxer.defaultVersion"]
+                ?? "dev-master";
 
         if (strpos($component["name"], "/") === false) {
             $component["name"] = "slaxweb/{$component}";
         }
 
         if ($component["version"] === "") {
-            $component["version"] = $config["version"] ?? "dev-master";
+            $component["version"] = $config["version"] ?? $defVer;
         }
 
         $component["installFlags"] = $config["installFlags"] ?? "";
