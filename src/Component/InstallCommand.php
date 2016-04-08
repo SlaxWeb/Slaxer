@@ -217,7 +217,7 @@ class InstallCommand extends Command
                 ?? "dev-master";
 
         if (strpos($component["name"], "/") === false) {
-            $component["name"] = "slaxweb/{$component}";
+            $component["name"] = "slaxweb/{$component["name"]}";
         }
 
         if ($component["version"] === "") {
@@ -226,6 +226,6 @@ class InstallCommand extends Command
 
         $component["installFlags"] = $config["installFlags"] ?? "";
 
-        return $config;
+        return $component;
     }
 }
