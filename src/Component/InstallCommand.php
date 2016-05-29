@@ -12,19 +12,36 @@
  * @link      https://github.com/slaxweb/
  * @version   0.1
  *
- * @todo: introduce some abstraction
+ * @todo: introduce some abstraction, right now it's just too procedural
+ * @todo: needs a complete rewrite in the future, structure of the code here is catastrophic! Author: slax0r
  */
 namespace SlaxWeb\Slaxer\Component;
 
 use SlaxWeb\Bootstrap\Application;
 use Symfony\Component\Console\Command\Command;
+use Symfony\Component\Console\Question\Question;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
+use Symfony\Component\Console\Question\ChoiceQuestion;
 
 class InstallCommand extends Command
 {
+    /**
+     * Input
+     *
+     * @var \Symfony\Component\Console\Input\InputInterface
+     */
+    protected $_input = null;
+
+    /**
+     * Output
+     *
+     * @var \Symfony\Component\Console\Output\OutputInterface
+     */
+    protected $_output = null;
+
     /**
      * Composer executable
      *
@@ -145,59 +162,45 @@ class InstallCommand extends Command
      */
     protected function execute(InputInterface $input, OutputInterface $output)
     {
+        $this->_input = $input;
+        $this->_output = $output;
+
         $component = $this->_finalizeComponent([
-            "name"          =>  strtolower($input->getArgument("name")),
-            "version"       =>  $input->getArgument("version") ?? "",
+            "name"          =>  strtolower($this->_input->getArgument("name")),
+            "version"       =>  $this->_input->getArgument("version") ?? "",
             "installFlags"  =>  ""
         ]);
 
-        $output->writeln("<comment>Checking if component {$component["name"]} exists ...</>");
+        $this->_output->writeln("<comment>Checking if component {$component["name"]} exists ...</>");
         if ($this->_checkComponentExists($component["name"]) === false) {
-            $output->writeln("<error>Component {$component["name"]} not found.</>");
+            $this->_output->writeln("<error>Component {$component["name"]} not found.</>");
             return;
         }
-        $output->writeln("<comment>OK</>");
+        $this->_output->writeln("<comment>OK</>");
 
-        $output->writeln("<comment>Checking if composer exists ...</>");
+        $this->_output->writeln("<comment>Checking if composer exists ...</>");
         if ($this->_setComposer() === false) {
-            $output->writeln(
+            $this->_output->writeln(
                 "<error>Composer not found. Make sure you have it installed, and is executable in your PATH</>"
             );
             return;
         }
-        $output->writeln("<comment>OK</>");
+        $this->_output->writeln("<comment>OK</>");
 
-        $output->writeln("<comment>Trying to install component {$component["name"]} ...</>");
+        $this->_output->writeln("<comment>Trying to install component {$component["name"]} ...</>");
         if ($this->_install($component) === false) {
-            $output->writeln("<error>{$this->_error}</>");
+            $this->_output->writeln("<error>{$this->_error}</>");
             return;
         }
-        $output->writeln("<comment>Component installed. Starting configuration of component</>");
+        $this->_output->writeln("<comment>Component installed. Starting configuration of component</>");
 
         if ($this->_configure($component["name"]) === false) {
-            $output->writeln("<error>{$this->_error}</>");
+            $this->_output->writeln("<error>{$this->_error}</>");
             return;
         }
+        $this->_output->writeln("<comment>OK</>");
 
-        if (file_exists("{$this->_app["appDir"]}../vendor/{$component["name"]}/install/PostInstall.php")) {
-            require "{$this->_app["appDir"]}../vendor/{$component["name"]}/install/PostInstall.php";
-            if (run($this->_app) !== 0) {
-                $output->writeln(
-                    "<error>'PostInstall' ran with errors</>"
-                );
-            } else {
-                $output->writeln(
-                    "<comment>'PostInstall' found and executed successfuly</>"
-                );
-            }
-        }
-        $output->writeln(
-            "<comment>OK</>"
-        );
-
-        $output->writeln(
-            "<comment>Component {$component["name"]} installed successfully.</>"
-        );
+        $this->_output->writeln("<comment>Component {$component["name"]} installed successfully.</>");
     }
 
     /**
@@ -268,9 +271,10 @@ class InstallCommand extends Command
      * not exist, or the component is not of type 'main' the component is removed.
      *
      * @param array $component Component data
+     * @param bool $isMain If component is main
      * @return bool
      */
-    protected function _install(array $component): bool
+    protected function _install(array $component, bool $isMain = true): bool
     {
         $exit = 0;
         system(
@@ -286,7 +290,7 @@ class InstallCommand extends Command
             return false;
         }
 
-        if ($this->_metaData->type !== "main") {
+        if ($isMain && $this->_metaData->type !== "main") {
             $this->_remove($component["name"]);
             $this->_error = "Only components with type 'main' can be installed directly. Package removed.";
             return false;
@@ -360,6 +364,35 @@ class InstallCommand extends Command
             );
         }
 
+        // install submodules
+        if (empty($this->_metaData->submodules->list) === false) {
+            $helper = $this->getHelper("question");
+            $list = array_keys($this->_metaData->submodules->list);
+            if ($this->_metaData->submodules->required === false) {
+                $list[] = "None";
+            }
+            $question = $this->_metaData->submodules->multi ? "ChoiceQuestion" : "Question";
+            $installSub = new $question(
+                "Component '{$name}' provides the following sub-components to choose from.",
+                $list
+            );
+            $installSub->setMultiselect($this->_metaData->submodules->multi);
+            
+            $subs = $helper->ask($this->_input, $this->_output, $installSub);
+            $subs = is_string($subs) ? [$subs] : $subs;
+
+            if (in_array("None", $subs) === false) {
+                foreach ($subs as $sub) {
+                    $version = $this->_metaData->submodules->list->{$sub};
+                    $subComponent = ["name" => $sub, "version" => $version, "installFlags" => ""];
+                    if ($this->_install($subComponent, false) === false) {
+                        $this->_error = "Error installing sub component. Leaving main component installed";
+                        return false;
+                    }
+                }
+            }
+        }
+
         return true;
     }
 
@@ -391,7 +424,7 @@ class InstallCommand extends Command
         }
 
         foreach ($providers as $provider) {
-            if (strpos($newList, $provider) === false) {}
+            if (strpos($newList, $provider) === false) {
                 $newList .= "\n{$provider}::class,";
             }
         }
