@@ -414,7 +414,7 @@ class InstallCommand extends Command
      * @param array $providers List of providers to be added to configuration
      * @return void
      */
-    protected function _addClassLoaders(array $config, array $providers)
+    protected function _addProviders(array $config, array $providers)
     {
         // load config file
         $configFile = "{$this->_app["appDir"]}Config/{$config["file"]}";
