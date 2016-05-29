@@ -349,9 +349,9 @@ class InstallCommand extends Command
     {
         // add providers to configuration
         if (empty($this->_metaData->providers) === false) {
-            foreach ($this->_providersMap as $name => $map) {
-                if (empty($this->_metaData->providers->{$map}) === false) {
-                    $this->_addProviders($map, $this->_metaData->providers->{$name});
+            foreach ($this->_providersMap as $providerName => $map) {
+                if (empty($this->_metaData->providers->{$providerName}) === false) {
+                    $this->_addProviders($map, $this->_metaData->providers->{$providerName});
                 }
             }
         }
@@ -367,16 +367,23 @@ class InstallCommand extends Command
         // install subcomponents
         if (empty($this->_metaData->subcomponents->list) === false) {
             $helper = $this->getHelper("question");
-            $list = array_keys($this->_metaData->subcomponents->list);
+            $list = array_keys((array)$this->_metaData->subcomponents->list);
             if ($this->_metaData->subcomponents->required === false) {
                 $list[] = "None";
             }
             $question = $this->_metaData->subcomponents->multi ? "ChoiceQuestion" : "Question";
-            $installSub = new $question(
-                "Component '{$name}' provides the following sub-components to choose from.",
-                $list
-            );
-            $installSub->setMultiselect($this->_metaData->subcomponents->multi);
+            if ($this->_metaData->subcomponents->multi) {
+                $installSub = new ChoiceQuestion(
+                    "Component '{$name}' provides the following sub-components to choose from.",
+                    $list
+                );
+                $installSub->setMultiselect(true);
+            } else {
+                $installSub = new Question(
+                    "Component '{$name}' provides the following sub-components to choose from. Choose one",
+                    $list
+                );
+            }
             
             $subs = $helper->ask($this->_input, $this->_output, $installSub);
             $subs = is_string($subs) ? [$subs] : $subs;
