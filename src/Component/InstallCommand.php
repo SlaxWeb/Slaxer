@@ -11,6 +11,8 @@
  * @license   MIT <https://opensource.org/licenses/MIT>
  * @link      https://github.com/slaxweb/
  * @version   0.1
+ *
+ * @todo: introduce some abstraction
  */
 namespace SlaxWeb\Slaxer\Component;
 
@@ -57,6 +59,28 @@ class InstallCommand extends Command
      * @var string
      */
     protected $_error = "";
+
+    /**
+     * Providers mapping
+     *
+     * Configuration file mapping for providers and their key names
+     *
+     * @var array
+     */
+    protected $_providersMap = [
+        "app" =>  [
+            "file"  =>  "app.php",
+            "key"   =>  "providerList"
+        ],
+        "commands"  =>  [
+            "file"  =>  "app.php",
+            "key"   =>  "commandsList"
+        ],
+        "hooks"     =>  [
+            "file"  =>  "app.php",
+            "key"   =>  "hooksList"
+        ]
+    ];
 
     /**
      * Component meta data
@@ -320,7 +344,11 @@ class InstallCommand extends Command
     protected function _configure(string $name): bool
     {
         if (empty($this->_metaData->providers) === false) {
-            $this->_addProviders($this->_metaData->providers);
+            foreach ($this->_providersMap as $name => $map) {
+                if (empty($this->_metaData->providers->{$map}) === false) {
+                    $this->_addProviders($map, $this->_metaData->providers->{$name});
+                }
+            }
         }
 
         return true;
@@ -329,21 +357,22 @@ class InstallCommand extends Command
     /**
      * Add providers to config
      *
-     * Add provider classes to providers list.
+     * Add providers to provided config file, and the provided configuration key
+     * name.
      *
-     * @param array $providers List of providers that need to get added
+     * @param array $config Configuration for provider including the file name and
+     *                      configuration key name
+     * @param array $providers List of providers to be added to configuration
      * @return void
-     *
-     * @todo: check if already added, then skip it
      */
-    protected function _addProviders(array $providers)
+    protected function _addClassLoaders(array $config, array $providers)
     {
         // load config file
-        $configFile = "{$this->_app["appDir"]}Config/app.php";
+        $configFile = "{$this->_app["appDir"]}Config/{$config["file"]}";
         $config = file_get_contents($configFile);
 
         // get current providerList body
-        preg_match("~\[[\"']providerList['\"]\].+?\[(.*?)\];~s", $config, $matches);
+        preg_match("~\[[\"']{$config["key"]}['\"]\].+?\[(.*?)\];~s", $config, $matches);
         $providerList = $matches[1];
 
         // append comma to last provider in list if needed
@@ -353,7 +382,9 @@ class InstallCommand extends Command
         }
 
         foreach ($providers as $provider) {
-            $newList .= "\n{$provider}::class,";
+            if (strpos($newList, $provider) === false) {}
+                $newList .= "\n{$provider}::class,";
+            }
         }
         $newList = rtrim($newList, ",") . "\n";
 
