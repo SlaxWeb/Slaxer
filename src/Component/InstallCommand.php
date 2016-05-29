@@ -364,26 +364,26 @@ class InstallCommand extends Command
             );
         }
 
-        // install submodules
-        if (empty($this->_metaData->submodules->list) === false) {
+        // install subcomponents
+        if (empty($this->_metaData->subcomponents->list) === false) {
             $helper = $this->getHelper("question");
-            $list = array_keys($this->_metaData->submodules->list);
-            if ($this->_metaData->submodules->required === false) {
+            $list = array_keys($this->_metaData->subcomponents->list);
+            if ($this->_metaData->subcomponents->required === false) {
                 $list[] = "None";
             }
-            $question = $this->_metaData->submodules->multi ? "ChoiceQuestion" : "Question";
+            $question = $this->_metaData->subcomponents->multi ? "ChoiceQuestion" : "Question";
             $installSub = new $question(
                 "Component '{$name}' provides the following sub-components to choose from.",
                 $list
             );
-            $installSub->setMultiselect($this->_metaData->submodules->multi);
+            $installSub->setMultiselect($this->_metaData->subcomponents->multi);
             
             $subs = $helper->ask($this->_input, $this->_output, $installSub);
             $subs = is_string($subs) ? [$subs] : $subs;
 
             if (in_array("None", $subs) === false) {
                 foreach ($subs as $sub) {
-                    $version = $this->_metaData->submodules->list->{$sub};
+                    $version = $this->_metaData->subcomponents->list->{$sub};
                     $subComponent = ["name" => $sub, "version" => $version, "installFlags" => ""];
                     if ($this->_install($subComponent, false) === false) {
                         $this->_error = "Error installing sub component. Leaving main component installed";
