@@ -343,12 +343,21 @@ class InstallCommand extends Command
      */
     protected function _configure(string $name): bool
     {
+        // add providers to configuration
         if (empty($this->_metaData->providers) === false) {
             foreach ($this->_providersMap as $name => $map) {
                 if (empty($this->_metaData->providers->{$map}) === false) {
                     $this->_addProviders($map, $this->_metaData->providers->{$name});
                 }
             }
+        }
+
+        // Add configuration files to framework configuration directory
+        foreach ($this->_metaData->configFiles as $file) {
+            copy(
+                "{$this->_app["appDir"]}../vendor/{$name}/config/{$file}",
+                "{$this->_app["appDir"]}Config/{$file}"
+            );
         }
 
         return true;
