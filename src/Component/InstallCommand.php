@@ -343,7 +343,7 @@ class InstallCommand extends Command
         $config = file_get_contents($configFile);
 
         // get current providerList body
-        preg_match("~providerList.+?(\[.*\])~s", $config, $matches);
+        preg_match("~\[[\"']providerList['\"]\].+?\[(.*?)\];~s", $config, $matches);
         $providerList = $matches[1];
 
         // append comma to last provider in list if needed
@@ -355,7 +355,7 @@ class InstallCommand extends Command
         foreach ($providers as $provider) {
             $newList .= "\n{$provider}::class,";
         }
-        $newList = rtrim($newList, ",");
+        $newList = rtrim($newList, ",") . "\n";
 
         $config = str_replace($providerList, $newList, $config);
 
