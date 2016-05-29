@@ -9,7 +9,7 @@
         }
     ],
     "require": {
-		"php":	">=7.0.0",
+        "php":  ">=7.0.0",
         "ext-curl": "*",
         "symfony/console": "~3.0",
         "guzzlehttp/guzzle": "~6.2"
@@ -17,11 +17,11 @@
     "suggest": {
         "pimple/pimple": "Make use of available providers for Pimple version 3.0.x"
     },
-	"autoload":	{
-		"psr-4": {
-			"SlaxWeb\\Slaxer\\": "src/"
-		}
-	},
+    "autoload": {
+        "psr-4": {
+            "SlaxWeb\\Slaxer\\": "src/"
+        }
+    },
     "extra": {
         "branch-alias": {
             "dev-develop": "0.1.x-dev"

@@ -24,6 +24,13 @@ use Symfony\Component\Console\Output\OutputInterface;
 class InstallCommand extends Command
 {
     /**
+     * Composer executable
+     *
+     * @var string
+     */
+    protected $_composer = "";
+
+    /**
      * SlaxWeb Framework Instance
      *
      * @var \SlaxWeb\Bootstrap\Application
@@ -43,6 +50,20 @@ class InstallCommand extends Command
      * @var string
      */
     protected $_baseUrl = "";
+
+    /**
+     * Error string
+     *
+     * @var string
+     */
+    protected $_error = "";
+
+    /**
+     * Component meta data
+     *
+     * @var string
+     */
+    protected $_metaData = [];
 
     /**
      * Init Command
@@ -106,47 +127,34 @@ class InstallCommand extends Command
             "installFlags"  =>  ""
         ]);
 
-        $output->writeln(
-            "<comment>Checking if component {$component["name"]} exists ...</>"
-        );
+        $output->writeln("<comment>Checking if component {$component["name"]} exists ...</>");
         if ($this->_checkComponentExists($component["name"]) === false) {
             $output->writeln("<error>Component {$component["name"]} not found.</>");
             return;
         }
-        $output->writeln(
-            "<comment>OK</>"
-        );
+        $output->writeln("<comment>OK</>");
 
-        $output->writeln(
-            "<comment>Checking if composer exists ...</>"
-        );
-        if (($cmd = $this->_getComposer()) === "") {
-            $output->writeln("<error>Composer not found.</>");
+        $output->writeln("<comment>Checking if composer exists ...</>");
+        if ($this->_setComposer() === false) {
+            $output->writeln(
+                "<error>Composer not found. Make sure you have it installed, and is executable in your PATH</>"
+            );
             return;
         }
-        $output->writeln(
-            "<comment>OK</>"
-        );
+        $output->writeln("<comment>OK</>");
 
-        $output->writeln(
-            "<comment>Trying to install component {$component["name"]} ...</>"
-        );
-        $exit = 0;
-        system(
-            "{$cmd} require {$component["name"]} {$component["version"]} {$component["installFlags"]}",
-            $exit
-        );
-        if ($exit !== 0) {
-            $output->writeln("<error>Composer did not exit as expected.</>");
+        $output->writeln("<comment>Trying to install component {$component["name"]} ...</>");
+        if ($this->_install($component) === false) {
+            $output->writeln("<error>{$this->_error}</>");
             return;
         }
-        $output->writeln(
-            "<comment>OK</>"
-        );
+        $output->writeln("<comment>Component installed. Starting configuration of component</>");
 
-        $output->writeln(
-            "<comment>Check 'PostInstall' script exists and run it</>"
-        );
+        if ($this->_configure($component["name"]) === false) {
+            $output->writeln("<error>{$this->_error}</>");
+            return;
+        }
+
         if (file_exists("{$this->_app["appDir"]}../vendor/{$component["name"]}/install/PostInstall.php")) {
             require "{$this->_app["appDir"]}../vendor/{$component["name"]}/install/PostInstall.php";
             if (run($this->_app) !== 0) {
@@ -187,18 +195,18 @@ class InstallCommand extends Command
     }
 
     /**
-     * Get Composer Command
+     * Set Composer Command
      *
-     * Get the composer command. Returns an empty string if no composer found.
+     * Set the composer command. Returns bool(false) if no composer found.
      *
-     * @return string
+     * @return bool
      *
-     * @todo Install composer locally if not found
+     * @todo: Install composer locally if not found
      */
-    protected function _getComposer(): string
+    protected function _setComposer(): bool
     {
-        ($cmd = trim(`which composer`)) || ($cmd = trim(`which composer.phar`));
-        return $cmd;
+        ($this->_composer = trim(`which composer`)) || ($this->_composer = trim(`which composer.phar`));
+        return $this->_composer !== "";
     }
 
     /**
@@ -227,5 +235,130 @@ class InstallCommand extends Command
         $component["installFlags"] = $config["installFlags"] ?? "";
 
         return $component;
+    }
+
+    /**
+     * Install component
+     *
+     * Installs the component and parses the meta data. If the meta data file does
+     * not exist, or the component is not of type 'main' the component is removed.
+     *
+     * @param array $component Component data
+     * @return bool
+     */
+    protected function _install(array $component): bool
+    {
+        $exit = 0;
+        system(
+            "{$this->_composer} require {$component["installFlags"]} {$component["name"]} {$component["version"]}",
+            $exit
+        );
+        if ($exit !== 0) {
+            $this->_error = "Composer command did not complete succesfully.";
+            return false;
+        }
+
+        if ($this->_parseMetaData($component["name"]) === false) {
+            return false;
+        }
+
+        if ($this->_metaData->type !== "main") {
+            $this->_remove($component["name"]);
+            $this->_error = "Only components with type 'main' can be installed directly. Package removed.";
+            return false;
+        }
+
+        return true;
+    }
+
+    /**
+     * Remove component
+     *
+     * Removes the component with the help of composer.
+     *
+     * @param string $name Name of the component
+     * @return bool
+     */
+    protected function _remove(string $name): bool
+    {
+        $exit = 0;
+        system("{$this->_composer} remove {$name}", $exit);
+        return $exit === 0;
+    }
+
+    /**
+     * Parse component meta data
+     *
+     * Load the meta data of the component and parse it. If the meta data file is
+     * not found, an error is set, and bool(false) is returned.
+     *
+     * @param string $name Name of the component
+     * @return bool
+     */
+    protected function _parseMetaData(string $name): bool
+    {
+        $metaFile = "{$this->_app["appDir"]}../vendor/{$name}/component.json";
+        if (file_exists($metaFile) === false) {
+            $this->_remove($name);
+            $this->_error = "Not a valid component. 'component.json' meta data file is missing. Package removed.";
+            return false;
+        }
+
+        $this->_metaData = json_decode(file_get_contents($metaFile));
+        return true;
+    }
+
+    /**
+     * Configure installed component
+     *
+     * Add providers, hooks, configuration files, and install sub-components if user
+     * requests it.
+     *
+     * @param string $name Component name
+     * @return bool
+     */
+    protected function _configure(string $name): bool
+    {
+        if (empty($this->_metaData->providers) === false) {
+            $this->_addProviders($this->_metaData->providers);
+        }
+
+        return true;
+    }
+
+    /**
+     * Add providers to config
+     *
+     * Add provider classes to providers list.
+     *
+     * @param array $providers List of providers that need to get added
+     * @return void
+     *
+     * @todo: check if already added, then skip it
+     */
+    protected function _addProviders(array $providers)
+    {
+        // load config file
+        $configFile = "{$this->_app["appDir"]}Config/app.php";
+        $config = file_get_contents($configFile);
+
+        // get current providerList body
+        preg_match("~providerList.+?(\[.*\])~s", $config, $matches);
+        $providerList = $matches[1];
+
+        // append comma to last provider in list if needed
+        preg_match_all("~^\s*?(['\"\\\\:\w\d_]+)(,?).*~m", $providerList, $matches);
+        if (end($matches[2]) === "") {
+            $newList = str_replace(end($matches[1]), end($matches[1]). ",", $providerList);
+        }
+
+        foreach ($providers as $provider) {
+            $newList .= "\n{$provider}::class,";
+        }
+        $newList = rtrim($newList, ",");
+
+        $config = str_replace($providerList, $newList, $config);
+
+        file_put_contents($configFile, $config);
     }
 }
