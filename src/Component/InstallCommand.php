@@ -418,10 +418,10 @@ class InstallCommand extends Command
     {
         // load config file
         $configFile = "{$this->_app["appDir"]}Config/{$config["file"]}";
-        $config = file_get_contents($configFile);
+        $appConfig = file_get_contents($configFile);
 
         // get current providerList body
-        preg_match("~\[[\"']{$config["key"]}['\"]\].+?\[(.*?)\];~s", $config, $matches);
+        preg_match("~\[[\"']{$config["key"]}['\"]\].+?\[(.*?)\];~s", $appConfig, $matches);
         $providerList = $matches[1];
 
         // append comma to last provider in list if needed
@@ -437,8 +437,8 @@ class InstallCommand extends Command
         }
         $newList = rtrim($newList, ",") . "\n";
 
-        $config = str_replace($providerList, $newList, $config);
+        $appConfig = str_replace($providerList, $newList, $appConfig);
 
-        file_put_contents($configFile, $config);
+        file_put_contents($configFile, $appConfig);
     }
 }
