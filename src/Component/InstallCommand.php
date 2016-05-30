@@ -402,7 +402,7 @@ class InstallCommand extends Command
 
         // run post configure script
         if (empty($this->_metaData->scripts->postConfigure) === false) {
-            require "{$this->_app["appDir"]}../vendor/{$name}/scrits/{$this->_metaData->scripts->postConfigure}";
+            require "{$this->_app["appDir"]}../vendor/{$name}/scripts/{$this->_metaData->scripts->postConfigure}";
         }
 
         return true;
