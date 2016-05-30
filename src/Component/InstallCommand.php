@@ -392,12 +392,17 @@ class InstallCommand extends Command
                         $this->_error = "Error installing sub component. Leaving main component installed";
                         return false;
                     }
-                    if ($this->_configure($subComponent) === false) {
+                    if ($this->_configure($name) === false) {
                         $this->_error = "Subcomponent configuration failed. Leaving main component installed";
                         return false;
                     }
                 }
             }
+        }
+
+        // run post configure script
+        if (empty($this->_metaData->scripts->postConfigure) === false) {
+            require "{$this->_app["appDir"]}../vendor/{$name}/scrits/{$this->_metaData->scripts->postConfigure}";
         }
 
         return true;
