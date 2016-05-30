@@ -393,7 +393,8 @@ class InstallCommand extends Command
             if (in_array("None", $subs) === false) {
                 foreach ($subs as $sub) {
                     $version = $this->_metaData->subcomponents->list->{$sub};
-                    $subComponent = ["name" => $sub, "version" => $version, "installFlags" => ""];
+                    $name = strpos($sub, "/") === false ? "slaxweb/{$sub}" : $sub;
+                    $subComponent = ["name" => $name, "version" => $version, "installFlags" => ""];
                     if ($this->_install($subComponent, false) === false) {
                         $this->_error = "Error installing sub component. Leaving main component installed";
                         return false;
