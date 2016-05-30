@@ -379,7 +379,7 @@ class InstallCommand extends Command
             } else {
                 $installSub = new Question("{$question}\nChoice: " $list);
             }
-            
+
             $subs = $helper->ask($this->_input, $this->_output, $installSub);
             $subs = is_string($subs) ? [$subs] : $subs;
 
@@ -424,6 +424,8 @@ class InstallCommand extends Command
         preg_match_all("~^\s*?(['\"\\\\:\w\d_]+)(,?).*~m", $providerList, $matches);
         if (end($matches[2]) === "") {
             $newList = str_replace(end($matches[1]), end($matches[1]). ",", $providerList);
+        } else {
+            $newList = $providerList;
         }
 
         foreach ($providers as $provider) {
