@@ -392,6 +392,10 @@ class InstallCommand extends Command
                         $this->_error = "Error installing sub component. Leaving main component installed";
                         return false;
                     }
+                    if ($this->_configure($subComponent) === false) {
+                        $this->_error = "Subcomponent configuration failed. Leaving main component installed";
+                        return false;
+                    }
                 }
             }
         }
