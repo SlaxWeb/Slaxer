@@ -374,10 +374,10 @@ class InstallCommand extends Command
             $questionList = implode(", ", $list);
             $question = "Component '{$name}' provides the following sub-components to choose from.\n{$questionList}\n";
             if ($this->_metaData->subcomponents->multi) {
-                $installSub = new ChoiceQuestion("{$question}\nChoice (multiple choices, separated by comma): " $list);
+                $installSub = new ChoiceQuestion("{$question}\nChoice (multiple choices, separated by comma): ", $list);
                 $installSub->setMultiselect(true);
             } else {
-                $installSub = new Question("{$question}\nChoice: " $list);
+                $installSub = new Question("{$question}\nChoice: ", $list);
             }
 
             $subs = $helper->ask($this->_input, $this->_output, $installSub);
