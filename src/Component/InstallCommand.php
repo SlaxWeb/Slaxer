@@ -1,9 +1,9 @@
 <?php
 /**
- * Slaxer Service Provider
+ * Slaxer Install Component Command
  *
- * Initiate the Symfony Console Component, and expose it to the DIC as a
- * service.
+ * Install Component command contains functionality to install the command into
+ * the Framework.
  *
  * @package   SlaxWeb\Slaxer
  * @author    Tomaz Lovrec <tomaz.lovrec@gmail.com>
@@ -26,7 +26,7 @@ use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Console\Question\ChoiceQuestion;
 
-class InstallCommand extends Command
+class InstallCommand extends BaseCommand
 {
     /**
      * Input
@@ -50,25 +50,11 @@ class InstallCommand extends Command
     protected $_composer = "";
 
     /**
-     * SlaxWeb Framework Instance
-     *
-     * @var \SlaxWeb\Bootstrap\Application
-     */
-    protected $_app = null;
-
-    /**
      * Guzzle Client
      *
      * @var \GuzzleHttp\Client
      */
-    protected $_client = null;
-
-    /**
-     * Packagist Base Url
-     *
-     * @var string
-     */
-    protected $_baseUrl = "";
+    protected $client = null;
 
     /**
      * Error string
@@ -105,23 +91,6 @@ class InstallCommand extends Command
      * @var string
      */
     protected $_metaData = [];
-
-    /**
-     * Init Command
-     *
-     * Store the GuzzleHTTP Client object to the class property.
-     *
-     * @param \SlaxWeb\Bootstrap\Application $app Framework instance
-     * @param \GuzzleHttp\Client $client Guzzle Client
-     * @return void
-     */
-    public function init(Application $app, \GuzzleHttp\Client $client)
-    {
-        $this->_app = $app;
-        $this->_client = $client;
-
-        $this->_baseUrl = $this->_app["config.service"]["slaxer.baseUrl"];
-    }
 
     /**
      * Configure the command
@@ -213,9 +182,9 @@ class InstallCommand extends Command
      */
     protected function _checkComponentExists(string $component): bool
     {
-        $response = $this->_client->request(
+        $response = $this->client->request(
             "GET",
-            "{$this->_baseUrl}{$component}",
+            "{$this->baseUrl}{$component}",
             ["allow_redirects" => false]
         );
         return $response->getStatusCode() === 200;
@@ -247,8 +216,8 @@ class InstallCommand extends Command
      */
     protected function _finalizeComponent(array $component): array
     {
-        $config = $this->_app["config.service"]["slaxer.componentSettings"][$component["name"]] ?? [];
-        $defVer = $this->_app["config.service"]["slaxer.defaultVersion"]
+        $config = $this->app["config.service"]["slaxer.componentSettings"][$component["name"]] ?? [];
+        $defVer = $this->app["config.service"]["slaxer.defaultVersion"]
                 ?? "dev-master";
 
         if (strpos($component["name"], "/") === false) {
@@ -325,7 +294,7 @@ class InstallCommand extends Command
      */
     protected function _parseMetaData(string $name): bool
     {
-        $metaFile = "{$this->_app["appDir"]}../vendor/{$name}/component.json";
+        $metaFile = "{$this->app["appDir"]}../vendor/{$name}/component.json";
         if (file_exists($metaFile) === false) {
             $this->_remove($name);
             $this->_error = "Not a valid component. 'component.json' meta data file is missing. Package removed.";
@@ -359,8 +328,8 @@ class InstallCommand extends Command
         // Add configuration files to framework configuration directory
         foreach ($this->_metaData->configFiles as $file) {
             copy(
-                "{$this->_app["appDir"]}../vendor/{$name}/config/{$file}",
-                "{$this->_app["appDir"]}Config/{$file}"
+                "{$this->app["appDir"]}../vendor/{$name}/config/{$file}",
+                "{$this->app["appDir"]}Config/{$file}"
             );
         }
 
@@ -402,7 +371,7 @@ class InstallCommand extends Command
 
         // run post configure script
         if (empty($this->_metaData->scripts->postConfigure) === false) {
-            require "{$this->_app["appDir"]}../vendor/{$name}/scripts/{$this->_metaData->scripts->postConfigure}";
+            require "{$this->app["appDir"]}../vendor/{$name}/scripts/{$this->_metaData->scripts->postConfigure}";
         }
 
         return true;
@@ -422,7 +391,7 @@ class InstallCommand extends Command
     protected function _addProviders(array $config, array $providers)
     {
         // load config file
-        $configFile = "{$this->_app["appDir"]}Config/{$config["file"]}";
+        $configFile = "{$this->app["appDir"]}Config/{$config["file"]}";
         $appConfig = file_get_contents($configFile);
 
         // get current providerList body
