@@ -93,7 +93,7 @@ class InstallCommand extends BaseCommand
         }
         $this->output->writeln("<comment>OK</>");
 
-        $this->installSub();
+        $this->installSub($component["name"]);
 
         $this->output->writeln("<comment>Component {$component["name"]} installed successfully.</>");
     }
@@ -139,9 +139,10 @@ class InstallCommand extends BaseCommand
      * Installs the sub-component and parses its config, just as when installing
      * a main component.
      *
+     * @param string $name Component name
      * @return void
      */
-    protected function installSub()
+    protected function installSub(string $name)
     {
         $this->output->writeln("<comment>Component configured. Attempting to install Sub-Components...</>");
 
