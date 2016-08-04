@@ -210,7 +210,7 @@ abstract class BaseCommand extends Command
         $metaFile = "{$this->app["appDir"]}../vendor/{$name}/component.json";
         if (file_exists($metaFile) === false) {
             $this->remove($name);
-            $this->_error = "Not a valid component. 'component.json' meta data file is missing. Package removed.";
+            $this->error = "Not a valid component. 'component.json' meta data file is missing. Package removed.";
             return false;
         }
 
