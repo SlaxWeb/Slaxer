@@ -28,19 +28,6 @@ use Symfony\Component\Console\Question\ChoiceQuestion;
 
 class InstallCommand extends BaseCommand
 {
-    /**
-     * Input
-     *
-     * @var \Symfony\Component\Console\Input\InputInterface
-     */
-    protected $_input = null;
-
-    /**
-     * Output
-     *
-     * @var \Symfony\Component\Console\Output\OutputInterface
-     */
-    protected $_output = null;
 
     /**
      * Composer executable
@@ -131,78 +118,37 @@ class InstallCommand extends BaseCommand
      */
     protected function execute(InputInterface $input, OutputInterface $output)
     {
-        $this->_input = $input;
-        $this->_output = $output;
+        $this->input = $input;
+        $this->output = $output;
 
         $component = $this->_finalizeComponent([
-            "name"          =>  strtolower($this->_input->getArgument("name")),
-            "version"       =>  $this->_input->getArgument("version") ?? "",
+            "name"          =>  strtolower($this->input->getArgument("name")),
+            "version"       =>  $this->input->getArgument("version") ?? "",
             "installFlags"  =>  ""
         ]);
 
-        $this->_output->writeln("<comment>Checking if component {$component["name"]} exists ...</>");
-        if ($this->_checkComponentExists($component["name"]) === false) {
-            $this->_output->writeln("<error>Component {$component["name"]} not found.</>");
+        if ($this->componentExists($component["name"]) === false) {
             return;
         }
-        $this->_output->writeln("<comment>OK</>");
 
-        $this->_output->writeln("<comment>Checking if composer exists ...</>");
-        if ($this->_setComposer() === false) {
-            $this->_output->writeln(
-                "<error>Composer not found. Make sure you have it installed, and is executable in your PATH</>"
-            );
+        if ($this->checkComposer() === false) {
             return;
         }
-        $this->_output->writeln("<comment>OK</>");
 
-        $this->_output->writeln("<comment>Trying to install component {$component["name"]} ...</>");
+        $this->output->writeln("<comment>Trying to install component {$component["name"]} ...</>");
         if ($this->_install($component) === false) {
-            $this->_output->writeln("<error>{$this->_error}</>");
+            $this->output->writeln("<error>{$this->_error}</>");
             return;
         }
-        $this->_output->writeln("<comment>Component installed. Starting configuration of component</>");
+        $this->output->writeln("<comment>Component installed. Starting configuration of component</>");
 
         if ($this->_configure($component["name"]) === false) {
-            $this->_output->writeln("<error>{$this->_error}</>");
+            $this->output->writeln("<error>{$this->_error}</>");
             return;
         }
-        $this->_output->writeln("<comment>OK</>");
+        $this->output->writeln("<comment>OK</>");
 
-        $this->_output->writeln("<comment>Component {$component["name"]} installed successfully.</>");
-    }
-
-    /**
-     * Check Component Exists
-     *
-     * Try to find the component on packagist.
-     *
-     * @param string $component Component name to check for existance.
-     * @return bool
-     */
-    protected function _checkComponentExists(string $component): bool
-    {
-        $response = $this->client->request(
-            "GET",
-            "{$this->baseUrl}{$component}",
-            ["allow_redirects" => false]
-        );
-        return $response->getStatusCode() === 200;
-    }
-
-    /**
-     * Set Composer Command
-     *
-     * Set the composer command. Returns bool(false) if no composer found.
-     *
-     * @return bool
-     *
-     * @todo: Install composer locally if not found
-     */
-    protected function _setComposer(): bool
-    {
-        ($this->_composer = trim(`which composer`)) || ($this->_composer = trim(`which composer.phar`));
-        return $this->_composer !== "";
+        $this->output->writeln("<comment>Component {$component["name"]} installed successfully.</>");
     }
 
     /**
@@ -349,7 +295,7 @@ class InstallCommand extends BaseCommand
                 $installSub = new Question("{$question}\nChoice: ", $list);
             }
 
-            $subs = $helper->ask($this->_input, $this->_output, $installSub);
+            $subs = $helper->ask($this->input, $this->output, $installSub);
             $subs = is_string($subs) ? [$subs] : $subs;
 
             if (in_array("None", $subs) === false) {
