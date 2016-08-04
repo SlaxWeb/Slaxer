@@ -88,13 +88,13 @@ class InstallCommand extends BaseCommand
 
         $this->output->writeln("<comment>Trying to install component {$component["name"]} ...</>");
         if ($this->install($component) === false) {
-            $this->output->writeln("<error>{$this->error}</>");
+            $this->output->writeln("<error>ERROR: {$this->error}</>");
             return;
         }
         $this->output->writeln("<comment>Component installed. Starting configuration of component</>");
 
         if ($this->configComponent($component["name"]) === false) {
-            $this->output->writeln("<error>{$this->error}</>");
+            $this->output->writeln("<error>ERROR: {$this->error}</>");
             return;
         }
         $this->output->writeln("<comment>OK</>");

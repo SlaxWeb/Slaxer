@@ -161,7 +161,7 @@ abstract class BaseCommand extends Command
         ($this->composer = trim(`which composer`)) || ($this->composer = trim(`which composer.phar`));
         if ($this->composer === "") {
             $this->output->writeln(
-                "<error>Composer not found. Make sure you have it installed, and is executable in your PATH</>"
+                "<error>ERROR: Composer not found. Make sure you have it installed, and is executable in your PATH</>"
             );
             return false;
         }
@@ -188,7 +188,7 @@ abstract class BaseCommand extends Command
             ["allow_redirects" => false]
         );
         if ($response->getStatusCode() !== 200) {
-            $this->output->writeln("<error>Component {$component} not found.</>");
+            $this->output->writeln("<error>ERROR: Component {$component} not found.</>");
             return false;
         }
 
