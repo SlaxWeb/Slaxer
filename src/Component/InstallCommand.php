@@ -29,55 +29,6 @@ use Symfony\Component\Console\Question\ChoiceQuestion;
 class InstallCommand extends BaseCommand
 {
 
-    /**
-     * Composer executable
-     *
-     * @var string
-     */
-    protected $_composer = "";
-
-    /**
-     * Guzzle Client
-     *
-     * @var \GuzzleHttp\Client
-     */
-    protected $client = null;
-
-    /**
-     * Error string
-     *
-     * @var string
-     */
-    protected $_error = "";
-
-    /**
-     * Providers mapping
-     *
-     * Configuration file mapping for providers and their key names
-     *
-     * @var array
-     */
-    protected $_providersMap = [
-        "app" =>  [
-            "file"  =>  "app.php",
-            "key"   =>  "providerList"
-        ],
-        "commands"  =>  [
-            "file"  =>  "app.php",
-            "key"   =>  "commandsList"
-        ],
-        "hooks"     =>  [
-            "file"  =>  "app.php",
-            "key"   =>  "hooksList"
-        ]
-    ];
-
-    /**
-     * Component meta data
-     *
-     * @var string
-     */
-    protected $_metaData = [];
 
     /**
      * Configure the command
@@ -121,7 +72,7 @@ class InstallCommand extends BaseCommand
         $this->input = $input;
         $this->output = $output;
 
-        $component = $this->_finalizeComponent([
+        $component = $this->finalizeComponent([
             "name"          =>  strtolower($this->input->getArgument("name")),
             "version"       =>  $this->input->getArgument("version") ?? "",
             "installFlags"  =>  ""
@@ -152,34 +103,6 @@ class InstallCommand extends BaseCommand
     }
 
     /**
-     * Finalize component info
-     *
-     * Obtain component info from configuration if it exists, and was not passed
-     * in as command line arguments.
-     *
-     * @param array $component Component data
-     * @return array
-     */
-    protected function _finalizeComponent(array $component): array
-    {
-        $config = $this->app["config.service"]["slaxer.componentSettings"][$component["name"]] ?? [];
-        $defVer = $this->app["config.service"]["slaxer.defaultVersion"]
-                ?? "dev-master";
-
-        if (strpos($component["name"], "/") === false) {
-            $component["name"] = "slaxweb/{$component["name"]}";
-        }
-
-        if ($component["version"] === "") {
-            $component["version"] = $config["version"] ?? $defVer;
-        }
-
-        $component["installFlags"] = $config["installFlags"] ?? "";
-
-        return $component;
-    }
-
-    /**
      * Install component
      *
      * Installs the component and parses the meta data. If the meta data file does
@@ -193,7 +116,7 @@ class InstallCommand extends BaseCommand
     {
         $exit = 0;
         system(
-            "{$this->_composer} require {$component["installFlags"]} {$component["name"]} {$component["version"]}",
+            "{$this->composer} require {$component["installFlags"]} {$component["name"]} {$component["version"]}",
             $exit
         );
         if ($exit !== 0) {
@@ -201,53 +124,16 @@ class InstallCommand extends BaseCommand
             return false;
         }
 
-        if ($this->_parseMetaData($component["name"]) === false) {
+        if ($this->parseMetaData($component["name"]) === false) {
             return false;
         }
 
-        if ($isMain && $this->_metaData->type !== "main") {
-            $this->_remove($component["name"]);
+        if ($isMain && $this->metaData->type !== "main") {
+            $this->remove($component["name"]);
             $this->_error = "Only components with type 'main' can be installed directly. Package removed.";
             return false;
         }
 
-        return true;
-    }
-
-    /**
-     * Remove component
-     *
-     * Removes the component with the help of composer.
-     *
-     * @param string $name Name of the component
-     * @return bool
-     */
-    protected function _remove(string $name): bool
-    {
-        $exit = 0;
-        system("{$this->_composer} remove {$name}", $exit);
-        return $exit === 0;
-    }
-
-    /**
-     * Parse component meta data
-     *
-     * Load the meta data of the component and parse it. If the meta data file is
-     * not found, an error is set, and bool(false) is returned.
-     *
-     * @param string $name Name of the component
-     * @return bool
-     */
-    protected function _parseMetaData(string $name): bool
-    {
-        $metaFile = "{$this->app["appDir"]}../vendor/{$name}/component.json";
-        if (file_exists($metaFile) === false) {
-            $this->_remove($name);
-            $this->_error = "Not a valid component. 'component.json' meta data file is missing. Package removed.";
-            return false;
-        }
-
-        $this->_metaData = json_decode(file_get_contents($metaFile));
         return true;
     }
 
@@ -263,16 +149,16 @@ class InstallCommand extends BaseCommand
     protected function _configure(string $name): bool
     {
         // add providers to configuration
-        if (empty($this->_metaData->providers) === false) {
-            foreach ($this->_providersMap as $providerName => $map) {
-                if (empty($this->_metaData->providers->{$providerName}) === false) {
-                    $this->_addProviders($map, $this->_metaData->providers->{$providerName});
+        if (empty($this->metaData->providers) === false) {
+            foreach ($this->providersMap as $providerName => $map) {
+                if (empty($this->metaData->providers->{$providerName}) === false) {
+                    $this->_addProviders($map, $this->metaData->providers->{$providerName});
                 }
             }
         }
 
         // Add configuration files to framework configuration directory
-        foreach ($this->_metaData->configFiles as $file) {
+        foreach ($this->metaData->configFiles as $file) {
             copy(
                 "{$this->app["appDir"]}../vendor/{$name}/config/{$file}",
                 "{$this->app["appDir"]}Config/{$file}"
@@ -280,15 +166,15 @@ class InstallCommand extends BaseCommand
         }
 
         // install subcomponents
-        if (empty($this->_metaData->subcomponents->list) === false) {
+        if (empty($this->metaData->subcomponents->list) === false) {
             $helper = $this->getHelper("question");
-            $list = array_keys((array)$this->_metaData->subcomponents->list);
-            if ($this->_metaData->subcomponents->required === false) {
+            $list = array_keys((array)$this->metaData->subcomponents->list);
+            if ($this->metaData->subcomponents->required === false) {
                 $list[] = "None";
             }
             $questionList = implode(", ", $list);
             $question = "Component '{$name}' provides the following sub-components to choose from.\n{$questionList}\n";
-            if ($this->_metaData->subcomponents->multi) {
+            if ($this->metaData->subcomponents->multi) {
                 $installSub = new ChoiceQuestion("{$question}\nChoice (multiple choices, separated by comma): ", $list);
                 $installSub->setMultiselect(true);
             } else {
@@ -300,7 +186,7 @@ class InstallCommand extends BaseCommand
 
             if (in_array("None", $subs) === false) {
                 foreach ($subs as $sub) {
-                    $version = $this->_metaData->subcomponents->list->{$sub};
+                    $version = $this->metaData->subcomponents->list->{$sub};
                     $name = strpos($sub, "/") === false ? "slaxweb/{$sub}" : $sub;
                     $subComponent = ["name" => $name, "version" => $version, "installFlags" => ""];
                     if ($this->_install($subComponent, false) === false) {
@@ -316,8 +202,8 @@ class InstallCommand extends BaseCommand
         }
 
         // run post configure script
-        if (empty($this->_metaData->scripts->postConfigure) === false) {
-            require "{$this->app["appDir"]}../vendor/{$name}/scripts/{$this->_metaData->scripts->postConfigure}";
+        if (empty($this->metaData->scripts->postConfigure) === false) {
+            require "{$this->app["appDir"]}../vendor/{$name}/scripts/{$this->metaData->scripts->postConfigure}";
         }
 
         return true;

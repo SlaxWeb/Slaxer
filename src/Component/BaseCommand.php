@@ -37,6 +37,13 @@ abstract class BaseCommand extends Command
     protected $output = null;
 
     /**
+     * Composer executable
+     *
+     * @var string
+     */
+    protected $composer = "";
+
+    /**
      * SlaxWeb Framework Instance
      *
      * @var \SlaxWeb\Bootstrap\Application
@@ -51,11 +58,47 @@ abstract class BaseCommand extends Command
     protected $client = null;
 
     /**
+     * Error string
+     *
+     * @var string
+     */
+    protected $error = "";
+
+    /**
      * Packagist Base Url
      *
      * @var string
      */
     protected $baseUrl = "";
+
+    /**
+     * Providers mapping
+     *
+     * Configuration file mapping for providers and their key names
+     *
+     * @var array
+     */
+    protected $providersMap = [
+        "app" =>  [
+            "file"  =>  "app.php",
+            "key"   =>  "providerList"
+        ],
+        "commands"  =>  [
+            "file"  =>  "app.php",
+            "key"   =>  "commandsList"
+        ],
+        "hooks"     =>  [
+            "file"  =>  "app.php",
+            "key"   =>  "hooksList"
+        ]
+    ];
+
+    /**
+     * Component meta data
+     *
+     * @var string
+     */
+    protected $metaData = [];
 
     /**
      * Init Command
@@ -75,6 +118,34 @@ abstract class BaseCommand extends Command
     }
 
     /**
+     * Finalize component info
+     *
+     * Obtain component info from configuration if it exists, and was not passed
+     * in as command line arguments.
+     *
+     * @param array $component Component data
+     * @return array
+     */
+    protected function finalizeComponent(array $component): array
+    {
+        $config = $this->app["config.service"]["slaxer.componentSettings"][$component["name"]] ?? [];
+        $defVer = $this->app["config.service"]["slaxer.defaultVersion"]
+                ?? "dev-master";
+
+        if (strpos($component["name"], "/") === false) {
+            $component["name"] = "slaxweb/{$component["name"]}";
+        }
+
+        if ($component["version"] === "") {
+            $component["version"] = $config["version"] ?? $defVer;
+        }
+
+        $component["installFlags"] = $config["installFlags"] ?? "";
+
+        return $component;
+    }
+
+    /**
      * Check Composer Command
      *
      * Set the composer command. Returns bool(false) if no composer found.
@@ -87,8 +158,8 @@ abstract class BaseCommand extends Command
     {
         $this->output->writeln("<comment>Checking if composer exists ...</>");
 
-        ($this->_composer = trim(`which composer`)) || ($this->_composer = trim(`which composer.phar`));
-        if ($this->_composer === "") {
+        ($this->composer = trim(`which composer`)) || ($this->composer = trim(`which composer.phar`));
+        if ($this->composer === "") {
             $this->output->writeln(
                 "<error>Composer not found. Make sure you have it installed, and is executable in your PATH</>"
             );
@@ -123,5 +194,42 @@ abstract class BaseCommand extends Command
 
         $this->output->writeln("<comment>OK</>");
         return true;
+    }
+
+    /**
+     * Parse component meta data
+     *
+     * Load the meta data of the component and parse it. If the meta data file is
+     * not found, an error is set, and bool(false) is returned.
+     *
+     * @param string $name Name of the component
+     * @return bool
+     */
+    protected function parseMetaData(string $name): bool
+    {
+        $metaFile = "{$this->app["appDir"]}../vendor/{$name}/component.json";
+        if (file_exists($metaFile) === false) {
+            $this->remove($name);
+            $this->_error = "Not a valid component. 'component.json' meta data file is missing. Package removed.";
+            return false;
+        }
+
+        $this->metaData = json_decode(file_get_contents($metaFile));
+        return true;
+    }
+
+    /**
+     * Remove component
+     *
+     * Removes the component with the help of composer.
+     *
+     * @param string $name Name of the component
+     * @return bool
+     */
+    protected function remove(string $name): bool
+    {
+        $exit = 0;
+        system("{$this->composer} remove {$name}", $exit);
+        return $exit === 0;
     }
 }
