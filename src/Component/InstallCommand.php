@@ -130,4 +130,50 @@ class InstallCommand extends BaseCommand
 
         return true;
     }
+
+    /**
+     * Install SubComponent
+     *
+     * Installs the sub-component and parses its config, just as when installing
+     * a main component.
+     *
+     * @return void
+     */
+    protected function installSub()
+    {
+        if (empty($this->metaData->subcomponents->list) === false) {
+            $helper = $this->getHelper("question");
+            $list = array_keys((array)$this->metaData->subcomponents->list);
+            if ($this->metaData->subcomponents->required === false) {
+                $list[] = "None";
+            }
+            $questionList = implode(", ", $list);
+            $question = "Component '{$name}' provides the following sub-components to choose from.\n{$questionList}\n";
+            if ($this->metaData->subcomponents->multi) {
+                $installSub = new ChoiceQuestion("{$question}\nChoice (multiple choices, separated by comma): ", $list);
+                $installSub->setMultiselect(true);
+            } else {
+                $installSub = new Question("{$question}\nChoice: ", $list);
+            }
+
+            $subs = $helper->ask($this->input, $this->output, $installSub);
+            $subs = is_string($subs) ? [$subs] : $subs;
+
+            if (in_array("None", $subs) === false) {
+                foreach ($subs as $sub) {
+                    $version = $this->metaData->subcomponents->list->{$sub};
+                    $name = strpos($sub, "/") === false ? "slaxweb/{$sub}" : $sub;
+                    $subComponent = ["name" => $name, "version" => $version, "installFlags" => ""];
+                    if ($this->install($subComponent, false) === false) {
+                        $this->error = "Error installing sub component. Leaving main component installed";
+                        return false;
+                    }
+                    if ($this->configComponent($name) === false) {
+                        $this->error = "Subcomponent configuration failed. Leaving main component installed";
+                        return false;
+                    }
+                }
+            }
+        }
+    }
 }

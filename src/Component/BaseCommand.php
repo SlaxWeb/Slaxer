@@ -263,42 +263,6 @@ abstract class BaseCommand extends Command
             );
         }
 
-        // install subcomponents
-        if (empty($this->metaData->subcomponents->list) === false) {
-            $helper = $this->getHelper("question");
-            $list = array_keys((array)$this->metaData->subcomponents->list);
-            if ($this->metaData->subcomponents->required === false) {
-                $list[] = "None";
-            }
-            $questionList = implode(", ", $list);
-            $question = "Component '{$name}' provides the following sub-components to choose from.\n{$questionList}\n";
-            if ($this->metaData->subcomponents->multi) {
-                $installSub = new ChoiceQuestion("{$question}\nChoice (multiple choices, separated by comma): ", $list);
-                $installSub->setMultiselect(true);
-            } else {
-                $installSub = new Question("{$question}\nChoice: ", $list);
-            }
-
-            $subs = $helper->ask($this->input, $this->output, $installSub);
-            $subs = is_string($subs) ? [$subs] : $subs;
-
-            if (in_array("None", $subs) === false) {
-                foreach ($subs as $sub) {
-                    $version = $this->metaData->subcomponents->list->{$sub};
-                    $name = strpos($sub, "/") === false ? "slaxweb/{$sub}" : $sub;
-                    $subComponent = ["name" => $name, "version" => $version, "installFlags" => ""];
-                    if ($this->install($subComponent, false) === false) {
-                        $this->error = "Error installing sub component. Leaving main component installed";
-                        return false;
-                    }
-                    if ($this->configure($name) === false) {
-                        $this->error = "Subcomponent configuration failed. Leaving main component installed";
-                        return false;
-                    }
-                }
-            }
-        }
-
         // run post configure script
         if (empty($this->metaData->scripts->postConfigure) === false) {
             require "{$this->app["appDir"]}../vendor/{$name}/scripts/{$this->metaData->scripts->postConfigure}";
