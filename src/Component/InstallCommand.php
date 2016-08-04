@@ -93,6 +93,8 @@ class InstallCommand extends BaseCommand
         }
         $this->output->writeln("<comment>OK</>");
 
+        $this->installSub();
+
         $this->output->writeln("<comment>Component {$component["name"]} installed successfully.</>");
     }
 
@@ -141,6 +143,8 @@ class InstallCommand extends BaseCommand
      */
     protected function installSub()
     {
+        $this->output->writeln("<comment>Component configured. Attempting to install Sub-Components...</>");
+
         if (empty($this->metaData->subcomponents->list) === false) {
             $helper = $this->getHelper("question");
             $list = array_keys((array)$this->metaData->subcomponents->list);
@@ -175,5 +179,6 @@ class InstallCommand extends BaseCommand
                 }
             }
         }
+        $this->output->writeln("<comment>OK</>");
     }
 }
