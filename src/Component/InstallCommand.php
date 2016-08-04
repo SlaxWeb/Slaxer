@@ -93,7 +93,7 @@ class InstallCommand extends BaseCommand
         }
         $this->output->writeln("<comment>Component installed. Starting configuration of component</>");
 
-        if ($this->configure($component["name"]) === false) {
+        if ($this->configComponent($component["name"]) === false) {
             $this->output->writeln("<error>{$this->error}</>");
             return;
         }

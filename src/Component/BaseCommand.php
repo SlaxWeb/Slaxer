@@ -242,7 +242,7 @@ abstract class BaseCommand extends Command
      * @param string $name Component name
      * @return bool
      */
-    protected function configure(string $name): bool
+    protected function configComponent(string $name): bool
     {
         // add providers to configuration
         if (empty($this->metaData->providers) === false) {
