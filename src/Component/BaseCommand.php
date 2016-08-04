@@ -232,4 +232,117 @@ abstract class BaseCommand extends Command
         system("{$this->composer} remove {$name}", $exit);
         return $exit === 0;
     }
+
+    /**
+     * Configure installed component
+     *
+     * Add providers, hooks, configuration files, and install sub-components if user
+     * requests it.
+     *
+     * @param string $name Component name
+     * @return bool
+     */
+    protected function configure(string $name): bool
+    {
+        // add providers to configuration
+        if (empty($this->metaData->providers) === false) {
+            foreach ($this->providersMap as $providerName => $map) {
+                if (empty($this->metaData->providers->{$providerName}) === false) {
+                    $this->addProviders($map, $this->metaData->providers->{$providerName});
+                }
+            }
+        }
+
+        // Add configuration files to framework configuration directory
+        foreach ($this->metaData->configFiles as $file) {
+            copy(
+                "{$this->app["appDir"]}../vendor/{$name}/config/{$file}",
+                "{$this->app["appDir"]}Config/{$file}"
+            );
+        }
+
+        // install subcomponents
+        if (empty($this->metaData->subcomponents->list) === false) {
+            $helper = $this->getHelper("question");
+            $list = array_keys((array)$this->metaData->subcomponents->list);
+            if ($this->metaData->subcomponents->required === false) {
+                $list[] = "None";
+            }
+            $questionList = implode(", ", $list);
+            $question = "Component '{$name}' provides the following sub-components to choose from.\n{$questionList}\n";
+            if ($this->metaData->subcomponents->multi) {
+                $installSub = new ChoiceQuestion("{$question}\nChoice (multiple choices, separated by comma): ", $list);
+                $installSub->setMultiselect(true);
+            } else {
+                $installSub = new Question("{$question}\nChoice: ", $list);
+            }
+
+            $subs = $helper->ask($this->input, $this->output, $installSub);
+            $subs = is_string($subs) ? [$subs] : $subs;
+
+            if (in_array("None", $subs) === false) {
+                foreach ($subs as $sub) {
+                    $version = $this->metaData->subcomponents->list->{$sub};
+                    $name = strpos($sub, "/") === false ? "slaxweb/{$sub}" : $sub;
+                    $subComponent = ["name" => $name, "version" => $version, "installFlags" => ""];
+                    if ($this->install($subComponent, false) === false) {
+                        $this->error = "Error installing sub component. Leaving main component installed";
+                        return false;
+                    }
+                    if ($this->configure($name) === false) {
+                        $this->error = "Subcomponent configuration failed. Leaving main component installed";
+                        return false;
+                    }
+                }
+            }
+        }
+
+        // run post configure script
+        if (empty($this->metaData->scripts->postConfigure) === false) {
+            require "{$this->app["appDir"]}../vendor/{$name}/scripts/{$this->metaData->scripts->postConfigure}";
+        }
+
+        return true;
+    }
+
+    /**
+     * Add providers to config
+     *
+     * Add providers to provided config file, and the provided configuration key
+     * name.
+     *
+     * @param array $config Configuration for provider including the file name and
+     *                      configuration key name
+     * @param array $providers List of providers to be added to configuration
+     * @return void
+     */
+    protected function addProviders(array $config, array $providers)
+    {
+        // load config file
+        $configFile = "{$this->app["appDir"]}Config/{$config["file"]}";
+        $appConfig = file_get_contents($configFile);
+
+        // get current providerList body
+        preg_match("~\[[\"']{$config["key"]}['\"]\].+?\[(.*?)\];~s", $appConfig, $matches);
+        $providerList = $matches[1];
+
+        // append comma to last provider in list if needed
+        preg_match_all("~^\s*?(['\"\\\\:\w\d_]+)(,?).*~m", $providerList, $matches);
+        if (end($matches[2]) === "") {
+            $newList = str_replace(end($matches[1]), end($matches[1]). ",", $providerList);
+        } else {
+            $newList = $providerList;
+        }
+
+        foreach ($providers as $provider) {
+            if (strpos($newList, $provider) === false) {
+                $newList .= "\n{$provider}::class,";
+            }
+        }
+        $newList = rtrim($newList, ",") . "\n";
+
+        $appConfig = str_replace($providerList, $newList, $appConfig);
+
+        file_put_contents($configFile, $appConfig);
+    }
 }
