@@ -180,7 +180,7 @@ abstract class BaseCommand extends Command
      */
     protected function componentExists(string $component): bool
     {
-        $this->output->writeln("<comment>Checking if component {$component["name"]} exists ...</>");
+        $this->output->writeln("<comment>Checking if component {$component} exists ...</>");
 
         $response = $this->client->request(
             "GET",
@@ -188,7 +188,7 @@ abstract class BaseCommand extends Command
             ["allow_redirects" => false]
         );
         if ($response->getStatusCode() !== 200) {
-            $this->output->writeln("<error>Component {$component["name"]} not found.</>");
+            $this->output->writeln("<error>Component {$component} not found.</>");
             return false;
         }
 
