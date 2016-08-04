@@ -19,8 +19,6 @@ namespace SlaxWeb\Slaxer\Component;
 
 use SlaxWeb\Bootstrap\Application;
 use Symfony\Component\Console\Command\Command;
-use Symfony\Component\Console\Question\Question;
-use Symfony\Component\Console\Question\ChoiceQuestion;
 
 abstract class BaseCommand extends Command
 {
