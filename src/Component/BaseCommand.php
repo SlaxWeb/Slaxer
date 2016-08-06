@@ -197,6 +197,29 @@ abstract class BaseCommand extends Command
     }
 
     /**
+     * Check component installed
+     *
+     * Check if component directory exists. If it does not, consider it removed.
+     *
+     * @param string $component Name of the component
+     * @return bool
+     */
+    protected function isInstalled(string $component): bool
+    {
+        $this->output->writeln("<comment>Checking if component {$component} exists ...</>");
+
+        if (file_exists("{$this->app["appDir"]}../vendor/{$component}/") === false) {
+            $this->output->writeln(
+                "<error>ERROR: Component directory not found, component '{$component}' not installed.</>"
+            );
+            return false;
+        }
+
+        $this->output->writeln("<comment>OK</>");
+        return true;
+    }
+
+    /**
      * Parse component meta data
      *
      * Load the meta data of the component and parse it. If the meta data file is
@@ -221,13 +244,32 @@ abstract class BaseCommand extends Command
     /**
      * Remove component
      *
-     * Removes the component with the help of composer.
+     * Removes the component, its config files, and set providers with the help
+     * of composer.
      *
      * @param string $name Name of the component
      * @return bool
      */
     protected function remove(string $name): bool
     {
+        if ($this->parseMetaData($component["name"]) === false) {
+            return false;
+        }
+
+        // remove providers from configuration
+        if (empty($this->metaData->providers) === false) {
+            foreach ($this->providersMap as $providerName => $map) {
+                if (empty($this->metaData->providers->{$providerName}) === false) {
+                    $this->removeProviders($map, $this->metaData->providers->{$providerName});
+                }
+            }
+        }
+
+        // Remove configuration files from framework configuration directory
+        foreach ($this->metaData->configFiles as $file) {
+            unlink("{$this->app["appDir"]}Config/{$file}");
+        }
+
         $exit = 0;
         system("{$this->composer} remove {$name}", $exit);
         return $exit === 0;
@@ -307,6 +349,36 @@ abstract class BaseCommand extends Command
 
         $appConfig = str_replace($providerList, $newList, $appConfig);
 
+        file_put_contents($configFile, $appConfig);
+    }
+
+    /**
+     * Remove providers from config
+     *
+     * Remove providers from the provided config file, and the provided configuration
+     * key name.
+     *
+     * @param array $config Configuration for provider including the file name and
+     *                      configuration key name
+     * @param array $providers List of providers to be added to configuration
+     * @return void
+     */
+    protected function removeProviders(array $config, array $providers)
+    {
+        // load config file
+        $configFile = "{$this->app["appDir"]}Config/{$config["file"]}";
+        $appConfig = file_get_contents($configFile);
+
+        foreach ($providers as $provider) {
+            // remove each provider from the list
+           $appConfig =  preg_replace(
+                "~(\[[\"']{$config["key"]}['\"]\].+?\[.*){$provider}::class,?\n?(.*\];)~s",
+                "$1$2",
+                $appConfig
+            );
+        }
+
+        // rewrite config file
         file_put_contents($configFile, $appConfig);
     }
 }
