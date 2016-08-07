@@ -72,6 +72,13 @@ abstract class BaseCommand extends Command
     protected $baseUrl = "";
 
     /**
+     * Logger
+     *
+     * @var \Psr\Log\LoggerInterface
+     */
+    protected $logger = null;
+
+    /**
      * Providers mapping
      *
      * Configuration file mapping for providers and their key names
@@ -115,6 +122,7 @@ abstract class BaseCommand extends Command
         $this->client = $client;
 
         $this->baseUrl = $this->app["config.service"]["slaxer.baseUrl"];
+        $this->logger = $this->app["logger.service"]("Slaxer");
     }
 
     /**
