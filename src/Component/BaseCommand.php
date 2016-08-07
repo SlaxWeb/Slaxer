@@ -123,6 +123,8 @@ abstract class BaseCommand extends Command
 
         $this->baseUrl = $this->app["config.service"]["slaxer.baseUrl"];
         $this->logger = $this->app["logger.service"]("Slaxer");
+
+        $this->logger->info("Command '" . get_class($this) . "' has been initialized");
     }
 
     /**
@@ -136,6 +138,8 @@ abstract class BaseCommand extends Command
      */
     protected function finalizeComponent(array $component): array
     {
+        $this->logger->info("Obtaining component information");
+
         $config = $this->app["config.service"]["slaxer.componentSettings"][$component["name"]] ?? [];
         $defVer = $this->app["config.service"]["slaxer.defaultVersion"]
                 ?? "dev-master";
@@ -168,6 +172,7 @@ abstract class BaseCommand extends Command
 
         ($this->composer = trim(`which composer`)) || ($this->composer = trim(`which composer.phar`));
         if ($this->composer === "") {
+            $this->logger->error("Composer not found. Make sure you have it installed, and is executable in your PATH");
             $this->output->writeln(
                 "<error>ERROR: Composer not found. Make sure you have it installed, and is executable in your PATH</>"
             );
@@ -196,10 +201,12 @@ abstract class BaseCommand extends Command
             ["allow_redirects" => false]
         );
         if ($response->getStatusCode() !== 200) {
+            $this->logger->error("Component {$component} not found.");
             $this->output->writeln("<error>ERROR: Component {$component} not found.</>");
             return false;
         }
 
+        $this->logger->info("Component {$component} has been found on packagist service");
         $this->output->writeln("<comment>OK</>");
         return true;
     }
@@ -241,11 +248,13 @@ abstract class BaseCommand extends Command
         $metaFile = "{$this->app["appDir"]}../vendor/{$name}/component.json";
         if (file_exists($metaFile) === false) {
             system("{$this->composer} remove {$name}", $exit);
+            $this->logger->error("Not a valid component. 'component.json' meta data file is missing. Package removed.");
             $this->error = "Not a valid component. 'component.json' meta data file is missing. Package removed.";
             return false;
         }
 
         $this->metaData = json_decode(file_get_contents($metaFile));
+        $this->logger->debug("Component meta data parsed.", ["metaData" => $this->metaData]);
         return true;
     }
 
@@ -260,6 +269,8 @@ abstract class BaseCommand extends Command
      */
     protected function remove(string $name): bool
     {
+        $this->logger->info("Preparing to remove component {$name}");
+
         if ($this->parseMetaData($component["name"]) === false) {
             return false;
         }
@@ -273,14 +284,24 @@ abstract class BaseCommand extends Command
             }
         }
 
+        $this->logger->debug("All component providers have been removed from configuration");
+
         // Remove configuration files from framework configuration directory
         foreach ($this->metaData->configFiles as $file) {
             unlink("{$this->app["appDir"]}Config/{$file}");
         }
 
+        $this->logger->debug("All component configuration files have been removed");
+
         $exit = 0;
         system("{$this->composer} remove {$name}", $exit);
-        return $exit === 0;
+        if ($exit !== 0) {
+            $this->logger->error("Error removing installed component with composer.");
+            return false;
+        }
+
+        $this->logger->info("Component {$name} has been removed.");
+        return true;
     }
 
     /**
@@ -294,6 +315,8 @@ abstract class BaseCommand extends Command
      */
     protected function configComponent(string $name): bool
     {
+        $this->logger->info("Running configuration of component '{$name}'");
+
         // add providers to configuration
         if (empty($this->metaData->providers) === false) {
             foreach ($this->providersMap as $providerName => $map) {
@@ -303,6 +326,8 @@ abstract class BaseCommand extends Command
             }
         }
 
+        $this->logger->debug("Added component providers to configuration", ["providers" => $this->metaData->providers]);
+
         // Add configuration files to framework configuration directory
         foreach ($this->metaData->configFiles as $file) {
             copy(
@@ -311,11 +336,18 @@ abstract class BaseCommand extends Command
             );
         }
 
+        $this->logger->debug("Copied component configuration files", ["files" => $this->metaData->configFiles]);
+
         // run post configure script
         if (empty($this->metaData->scripts->postConfigure) === false) {
             require "{$this->app["appDir"]}../vendor/{$name}/scripts/{$this->metaData->scripts->postConfigure}";
+            $this->logger->debug(
+                "Post configuration script has been executed.",
+                ["script" => $this->metaData->scripts->postConfigure]
+            );
         }
 
+        $this->logger->info("Component configuration complete");
         return true;
     }
 
