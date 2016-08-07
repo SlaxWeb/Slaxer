@@ -44,10 +44,9 @@ class RemoveCommand extends BaseCommand
      * Execute the command
      *
      * Check that the component exists on packagist. If no slash is found in the
-     * name, component name is automatically prepended by 'slaxweb/', so that
-     * SlaxWeb components are installed by default. If the package exists, it
-     * checks that the 'composer' command is found and then proceeds by
-     * installing the package with 'composer'.
+     * name, component name is automatically prepended by 'slaxweb/', if the package
+     * exists, it checks that the 'composer' command is found and then proceeds by
+     * removing the package with 'composer' if the component is installed.
      *
      * @param \Symfony\Component\Console\Input\InputInterface $input Command Input Object
      * @param \Symfony\Component\Console\Output\OutputInterface $output Command Output Object
