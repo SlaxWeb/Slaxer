@@ -36,7 +36,7 @@ class RemoveCommand extends BaseCommand
             ->addArgument(
                 "name",
                 InputArgument::REQUIRED,
-                "Which component do you want to install?"
+                "Which component do you want to remove?"
             );
     }
 
