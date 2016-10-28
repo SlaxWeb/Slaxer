@@ -148,37 +148,40 @@ class InstallCommand extends BaseCommand
     {
         $this->output->writeln("<comment>Component configured. Attempting to install Sub-Components...</>");
 
-        if (empty($this->metaData->subcomponents->list) === false) {
-            $helper = $this->getHelper("question");
-            $list = array_keys((array)$this->metaData->subcomponents->list);
-            if ($this->metaData->subcomponents->required === false) {
-                $list[] = "None";
-            }
-            $questionList = implode(", ", $list);
-            $question = "Component '{$name}' provides the following sub-components to choose from.\n{$questionList}\n";
-            if ($this->metaData->subcomponents->multi) {
-                $installSub = new ChoiceQuestion("{$question}\nChoice (multiple choices, separated by comma): ", $list);
-                $installSub->setMultiselect(true);
-            } else {
-                $installSub = new Question("{$question}\nChoice: ", $list);
-            }
+        $subComponents = (array)$this->metaData->subcomponents->list;
+        if (empty($subComponent)) {
+            $this->output->writeln("<comment>No sub components found for current subcomponent.</>")
+                return;
+        }
+        $helper = $this->getHelper("question");
+        $list = array_keys($subComponents);
+        if ($this->metaData->subcomponents->required === false) {
+            $list[] = "None";
+        }
+        $questionList = implode(", ", $list);
+        $question = "Component '{$name}' provides the following sub-components to choose from.\n{$questionList}\n";
+        if ($this->metaData->subcomponents->multi) {
+            $installSub = new ChoiceQuestion("{$question}\nChoice (multiple choices, separated by comma): ", $list);
+            $installSub->setMultiselect(true);
+        } else {
+            $installSub = new Question("{$question}\nChoice: ", $list);
+        }
 
-            $subs = $helper->ask($this->input, $this->output, $installSub);
-            $subs = is_string($subs) ? [$subs] : $subs;
+        $subs = $helper->ask($this->input, $this->output, $installSub);
+        $subs = is_string($subs) ? [$subs] : $subs;
 
-            if (in_array("None", $subs) === false) {
-                foreach ($subs as $sub) {
-                    $version = $this->metaData->subcomponents->list->{$sub};
-                    $name = strpos($sub, "/") === false ? "slaxweb/{$sub}" : $sub;
-                    $subComponent = ["name" => $name, "version" => $version, "installFlags" => ""];
-                    if ($this->install($subComponent, false) === false) {
-                        $this->error = "Error installing sub component. Leaving main component installed";
-                        return false;
-                    }
-                    if ($this->configComponent($name) === false) {
-                        $this->error = "Subcomponent configuration failed. Leaving main component installed";
-                        return false;
-                    }
+        if (in_array("None", $subs) === false) {
+            foreach ($subs as $sub) {
+                $version = $subComponents[$sub];
+                $name = strpos($sub, "/") === false ? "slaxweb/{$sub}" : $sub;
+                $subComponent = ["name" => $name, "version" => $version, "installFlags" => ""];
+                if ($this->install($subComponent, false) === false) {
+                    $this->error = "Error installing sub component. Leaving main component installed";
+                    return;
+                }
+                if ($this->configComponent($name) === false) {
+                    $this->error = "Subcomponent configuration failed. Leaving main component installed";
+                    return;
                 }
             }
         }
