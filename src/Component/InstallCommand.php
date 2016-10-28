@@ -92,7 +92,9 @@ class InstallCommand extends BaseCommand
         }
         $this->output->writeln("<comment>OK</>");
 
-        $this->installSub($component["name"]);
+        if ($this->installSub($component["name"]) === false) {
+            $this->output->writeln("<error>WARNING: {$this->error}</>");
+        }
 
         $this->output->writeln("<comment>Component {$component["name"]} installed successfully.</>");
     }
@@ -139,16 +141,16 @@ class InstallCommand extends BaseCommand
      * a main component.
      *
      * @param string $name Component name
-     * @return void
+     * @return bool
      */
-    protected function installSub(string $name)
+    protected function installSub(string $name): bool
     {
         $this->output->writeln("<comment>Component configured. Attempting to install Sub-Components...</>");
 
         $subComponents = (array)$this->metaData->subcomponents->list;
         if (empty($subComponent)) {
             $this->output->writeln("<comment>No sub components found for current subcomponent.</>")
-                return;
+                return true;
         }
         $helper = $this->getHelper("question");
         $list = array_keys($subComponents);
@@ -174,14 +176,15 @@ class InstallCommand extends BaseCommand
                 $subComponent = ["name" => $name, "version" => $version, "installFlags" => ""];
                 if ($this->install($subComponent, false) === false) {
                     $this->error = "Error installing sub component. Leaving main component installed";
-                    return;
+                    return false;
                 }
                 if ($this->configComponent($name) === false) {
                     $this->error = "Subcomponent configuration failed. Leaving main component installed";
-                    return;
+                    return false;
                 }
             }
         }
         $this->output->writeln("<comment>OK</>");
+        return true;
     }
 }
