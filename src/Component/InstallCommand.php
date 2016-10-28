@@ -65,7 +65,7 @@ class InstallCommand extends BaseCommand
         $this->input = $input;
         $this->output = $output;
 
-        $component = $this->finalizeComponent([
+        $component = $this->getComponent([
             "name"          =>  strtolower($this->input->getArgument("name")),
             "version"       =>  $this->input->getArgument("version") ?? "",
             "installFlags"  =>  ""
@@ -118,6 +118,7 @@ class InstallCommand extends BaseCommand
         );
         if ($exit !== 0) {
             $this->error = "Composer command did not complete succesfully.";
+            $this->logger->error($this->error);
             return false;
         }
 
@@ -128,6 +129,7 @@ class InstallCommand extends BaseCommand
         if ($isMain && $this->metaData->type !== "main") {
             $this->remove($component["name"]);
             $this->error = "Only components with type 'main' can be installed directly. Package removed.";
+            $this->logger->error($this->error);
             return false;
         }
 
@@ -145,24 +147,31 @@ class InstallCommand extends BaseCommand
      */
     protected function installSub(string $name): bool
     {
+        $this->logger->debug("Installing subcomponents for '{$name}'");
         $this->output->writeln("<comment>Component configured. Attempting to install Sub-Components...</>");
 
         $subComponents = (array)$this->metaData->subcomponents->list;
         if (empty($subComponent)) {
+            $this->logger->info("No subcomponents found for component '{$name}'.");
             $this->output->writeln("<comment>No sub components found for current subcomponent.</>");
             return true;
         }
         $helper = $this->getHelper("question");
         $list = array_keys($subComponents);
         if ($this->metaData->subcomponents->required === false) {
+            $this->logger->debug(
+                "Component '{$name}' does not require subcomponents to be installed, adding 'None' to choice list"
+            );
             $list[] = "None";
         }
         $questionList = implode(", ", $list);
         $question = "Component '{$name}' provides the following sub-components to choose from.\n{$questionList}\n";
         if ($this->metaData->subcomponents->multi) {
+            $this->logger->debug("Multiple subcomponents may be installed.");
             $installSub = new ChoiceQuestion("{$question}\nChoice (multiple choices, separated by comma): ", $list);
             $installSub->setMultiselect(true);
         } else {
+            $this->logger->debug("Only one subcomponent can be installed for this component.");
             $installSub = new Question("{$question}\nChoice: ", $list);
         }
 
@@ -174,12 +183,15 @@ class InstallCommand extends BaseCommand
                 $version = $subComponents[$sub];
                 $name = strpos($sub, "/") === false ? "slaxweb/{$sub}" : $sub;
                 $subComponent = ["name" => $name, "version" => $version, "installFlags" => ""];
+                $this->logger->info("Installing subcomponent.", $subComponent);
                 if ($this->install($subComponent, false) === false) {
                     $this->error = "Error installing sub component. Leaving main component installed";
+                    $this->logger->error("Subcomponent installation failed, aborting further installation.");
                     return false;
                 }
                 if ($this->configComponent($name) === false) {
                     $this->error = "Subcomponent configuration failed. Leaving main component installed";
+                    $this->logger->error("Subcomponent configuration failed, aborting further installation.");
                     return false;
                 }
             }

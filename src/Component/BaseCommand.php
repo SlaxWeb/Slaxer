@@ -128,7 +128,7 @@ abstract class BaseCommand extends Command
     }
 
     /**
-     * Finalize component info
+     * Get component info
      *
      * Obtain component info from configuration if it exists, and was not passed
      * in as command line arguments.
@@ -136,7 +136,7 @@ abstract class BaseCommand extends Command
      * @param array $component Component data
      * @return array
      */
-    protected function finalizeComponent(array $component): array
+    protected function getComponent(array $component): array
     {
         $this->logger->info("Obtaining component information");
 
@@ -153,6 +153,8 @@ abstract class BaseCommand extends Command
         }
 
         $component["installFlags"] = $config["installFlags"] ?? "";
+
+        $this->logger->debug("Gathered component information", $component);
 
         return $component;
     }
