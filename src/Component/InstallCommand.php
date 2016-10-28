@@ -12,7 +12,6 @@
  * @link      https://github.com/slaxweb/
  * @version   0.1
  *
- * @todo: introduce some abstraction, right now it's just too procedural
  * @todo: needs a complete rewrite in the future, structure of the code here is catastrophic! Author: slax0r
  */
 namespace SlaxWeb\Slaxer\Component;
@@ -60,8 +59,6 @@ class InstallCommand extends BaseCommand
      * @param \Symfony\Component\Console\Input\InputInterface $input Command Input Object
      * @param \Symfony\Component\Console\Output\OutputInterface $output Command Output Object
      * @return void
-     *
-     * @todo Run PostInstall.php script after package has been installed.
      */
     protected function execute(InputInterface $input, OutputInterface $output)
     {
