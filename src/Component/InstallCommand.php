@@ -151,9 +151,9 @@ class InstallCommand extends BaseCommand
         $this->output->writeln("<comment>Component configured. Attempting to install Sub-Components...</>");
 
         $subComponents = (array)$this->metaData->subcomponents->list;
-        if (empty($subComponent)) {
+        if (empty($subComponents)) {
             $this->logger->info("No subcomponents found for component '{$name}'.");
-            $this->output->writeln("<comment>No sub components found for current subcomponent.</>");
+            $this->output->writeln("<comment>No sub components found for current component.</>");
             return true;
         }
         $helper = $this->getHelper("question");
