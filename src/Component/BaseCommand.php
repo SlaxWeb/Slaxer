@@ -87,15 +87,15 @@ abstract class BaseCommand extends Command
      */
     protected $providersMap = [
         "app" =>  [
-            "file"  =>  "app.php",
+            "file"  =>  "provider.php",
             "key"   =>  "providerList"
         ],
         "commands"  =>  [
-            "file"  =>  "app.php",
+            "file"  =>  "provider.php",
             "key"   =>  "commandsList"
         ],
         "hooks"     =>  [
-            "file"  =>  "app.php",
+            "file"  =>  "provider.php",
             "key"   =>  "hooksList"
         ]
     ];
@@ -367,8 +367,7 @@ abstract class BaseCommand extends Command
     protected function addProviders(array $config, array $providers)
     {
         // load config file
-        $configFile = "{$this->app["appDir"]}Config/{$config["file"]}";
-        $appConfig = file_get_contents($configFile);
+        $appConfig = file_get_contents("{$this->app["appDir"]}Config/{$config["file"]}");
 
         // get current providerList body
         preg_match("~\[[\"']{$config["key"]}['\"]\].+?\[(.*?)\];~s", $appConfig, $matches);
