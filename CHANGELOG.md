@@ -4,6 +4,8 @@ Changes between versions.
 
 ## Current changes
 
+* removed component command
+
 ## v0.2
 
 ## v0.2.0
