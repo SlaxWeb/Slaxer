@@ -33,7 +33,7 @@ class Provider implements \Pimple\ServiceProviderInterface
     public function register(Container $container)
     {
         $container["slaxer.service"] = function (Container $cont) {
-            $app = new CLIApp("Slaxer", "0.1.0");
+            $app = new CLIApp("Slaxer", "0.3.0");
 
             $installCommand = new InstallCommand;
             $installCommand->init($cont, new \GuzzleHttp\Client);
