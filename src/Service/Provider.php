@@ -15,8 +15,8 @@
 namespace SlaxWeb\Slaxer\Service;
 
 use Pimple\Container;
-use SlaxWeb\Slaxer\Component\InstallCommand;
 use Symfony\Component\Console\Application as CLIApp;
+use SlaxWeb\Bootstrap\Commands\Component\InstallCommand;
 
 class Provider implements \Pimple\ServiceProviderInterface
 {
