@@ -44,7 +44,6 @@ class Provider implements \Pimple\ServiceProviderInterface
             }
 
             foreach ($cont["slaxerCommands"] as $key => $value) {
-                $command = "";
                 $params = [];
                 if (is_int($key)) {
                     $command = $value;
