@@ -27,8 +27,6 @@ class Provider implements \Pimple\ServiceProviderInterface
      *
      * @param \Pimple\Container $app Dependency Injection Container
      * @return void
-     *
-     * @todo load the Install Package Command
      */
     public function register(Container $app)
     {
