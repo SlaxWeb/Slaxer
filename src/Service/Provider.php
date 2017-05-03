@@ -31,14 +31,10 @@ class Provider implements \Pimple\ServiceProviderInterface
     public function register(Container $app)
     {
         $app["slaxer.service"] = function (Container $app) {
-            $app = new CLIApp("Slaxer", "0.4.*-dev");
-
-            $installCommand = new InstallCommand;
-            $installCommand->init($app, new \GuzzleHttp\Client);
-            $app->add($installCommand);
+            $cliApp = new CLIApp("Slaxer", "0.4.*-dev");
 
             if (isset($app["slaxerCommands"]) === false) {
-                return $app;
+                return $cliApp;
             }
 
             foreach ($app["slaxerCommands"] as $key => $value) {
@@ -47,15 +43,22 @@ class Provider implements \Pimple\ServiceProviderInterface
                     $command = $value;
                 } else {
                     $command = $key;
-                    $params = $value;
+                    if (is_string($value)) {
+                        $value = [$value];
+                    }
+                    foreach ($value as $service) {
+                        $params[] = $app[$service];
+                    }
                 }
 
                 $cmd = new $command;
-                $cmd->init($app, ...$params);
-                $app->add($cmd);
+                if (method_exists($cmd, "init")) {
+                    $cmd->init(...$params);
+                }
+                $cliApp->add($cmd);
             }
 
-            return $app;
+            return $cliApp;
         };
     }
 }
