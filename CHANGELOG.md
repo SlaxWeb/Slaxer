@@ -4,6 +4,12 @@ Changes between versions.
 
 ## Current changes
 
+* add abstract command class
+
+## v0.3
+
+### v0.3.0
+
 * removed component command
 
 ## v0.2
