@@ -41,7 +41,7 @@ abstract class AbstractCommand extends Command
 
         $this->logger->info(
             "Custom command has been initialized and configured",
-            ["class" => get_class($this), "name" => $this->name]
+            ["class" => get_class($this), "name" => $this->getName()]
         );
     }
 }
