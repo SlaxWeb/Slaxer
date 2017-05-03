@@ -5,6 +5,7 @@ Changes between versions.
 ## Current changes
 
 * add abstract command class
+* load command parameters as services/properties from the service provider
 
 ## v0.3
 
