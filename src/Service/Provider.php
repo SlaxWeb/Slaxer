@@ -25,25 +25,25 @@ class Provider implements \Pimple\ServiceProviderInterface
      *
      * Register is called by the container, when the provider gets registered.
      *
-     * @param \Pimple\Container $container Dependency Injection Container
+     * @param \Pimple\Container $app Dependency Injection Container
      * @return void
      *
      * @todo load the Install Package Command
      */
-    public function register(Container $container)
+    public function register(Container $app)
     {
-        $container["slaxer.service"] = function (Container $cont) {
+        $app["slaxer.service"] = function (Container $app) {
             $app = new CLIApp("Slaxer", "0.4.*-dev");
 
             $installCommand = new InstallCommand;
-            $installCommand->init($cont, new \GuzzleHttp\Client);
+            $installCommand->init($app, new \GuzzleHttp\Client);
             $app->add($installCommand);
 
-            if (isset($cont["slaxerCommands"]) === false) {
+            if (isset($app["slaxerCommands"]) === false) {
                 return $app;
             }
 
-            foreach ($cont["slaxerCommands"] as $key => $value) {
+            foreach ($app["slaxerCommands"] as $key => $value) {
                 $params = [];
                 if (is_int($key)) {
                     $command = $value;
@@ -53,7 +53,7 @@ class Provider implements \Pimple\ServiceProviderInterface
                 }
 
                 $cmd = new $command;
-                $cmd->init($cont, ...$params);
+                $cmd->init($app, ...$params);
                 $app->add($cmd);
             }
 
