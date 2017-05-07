@@ -1,5 +1,5 @@
 <?php
-namespace SlaxWeb\Slaxer\Command;
+namespace SlaxWeb\Slaxer;
 
 use Psr\Log\LoggerInterface as Logger;
 use Symfony\Component\Console\Command\Command;
