@@ -51,7 +51,7 @@ class Provider implements \Pimple\ServiceProviderInterface
                     }
                 }
 
-                $cmd = new $command;
+                $cmd = new $command($app["logger.service"]("Slaxer"));
                 if (method_exists($cmd, "init")) {
                     $cmd->init(...$params);
                 }
